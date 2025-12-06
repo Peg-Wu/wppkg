@@ -42,6 +42,7 @@ def get_nb_trainable_parameters(model: nn.Module) -> tuple[int, int]:
     return trainable_params, all_param
 
 
+# Copied from peft.peft_model
 def print_trainable_parameters(model: nn.Module) -> None:
     """
     Prints the number of trainable parameters in the model.
@@ -115,7 +116,7 @@ def generate_default_deepspeed_config(
 ):
     assert Path(save_path).suffix.lower() == ".json", "Invalid path: must end with .json"
 
-    config_file = Path(__file__).resolve().parent / "ds_config" / (config_name + ".json")
+    config_file = Path(__file__).resolve().parent / "deepspeed_config" / (config_name + ".json")
 
     write_json(read_json(config_file, convert_to_easydict=False), save_path)
 
@@ -382,6 +383,7 @@ class DataCollatorForLanguageModeling(PaddingMixin):
         return self.torch_call(batch_data)
 
 
+# Modified from transformers.DataCollatorWithPadding
 @dataclass
 class DataCollatorWithPadding(PaddingMixin):
     def __call__(self, batch_data: list[dict[str, Any]]) -> dict[str, Any]:

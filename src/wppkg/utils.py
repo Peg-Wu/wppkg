@@ -2,6 +2,7 @@ import os
 import json
 import logging
 import numpy as np
+from pathlib import Path
 from tqdm.auto import tqdm
 from joblib import Parallel, delayed
 from typing import Union, List, Optional
@@ -42,6 +43,28 @@ def write_json(obj: dict, fpath: str):
     os.makedirs(os.path.dirname(fpath), exist_ok=True)
     with open(fpath, "w") as f:
         json.dump(obj, f, indent=4, separators=(",", ": "))
+
+
+def debugpy_header(port: int = 5678):
+    import debugpy
+    try:
+        # 5678 is the default attach port in the VS Code debug configurations. Unless a host and port are specified, host defaults to 127.0.0.1
+        debugpy.listen(("localhost", port))
+        print("Waiting for debugger attach ...")
+        debugpy.wait_for_client()
+    except Exception as e:
+        print("Debugger attach failed ...")
+
+
+def generate_default_debugpy_config(
+    port: int = 5678,
+    save_dir: str = "./"
+):
+    config_file = Path(__file__).resolve().parent / "debugpy_config" / "launch.json"
+    cfg = read_json(config_file, convert_to_easydict=False)
+    cfg["configurations"][-1]["connect"]["port"] = port
+    save_path = Path(save_dir) / ".vscode" / "launch.json"
+    write_json(cfg, save_path)
 
 
 def get_sorted_indices_in_array_1d(

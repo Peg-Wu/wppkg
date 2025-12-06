@@ -4,19 +4,29 @@ build-backend = "hatchling.build"
 
 [project]
 name = "wppkg"
-version = "0.0.2"
+version = "0.0.3"
 authors = [
   { name="Pengpeng Wu", email="peg2_wu@163.com" },
 ]
 description = "A package I developed for my daily work."
 readme = "README.md"
 keywords = ["wppkg"]
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 dependencies = [
-    "torch",
+    "torch",  # PyTorch: Installation details in README.md
     "transformers",
+    "datasets",
+    "evaluate",
+    "peft",
+    "bitsandbytes",
+    "accelerate",
+    "tensorboard",
+    "trl",
     "scanpy",
-    "easydict"
+    "matplotlib",
+    "joblib",
+    "easydict",
+    "debugpy"
 ]
 classifiers = [
     "Programming Language :: Python :: 3",
