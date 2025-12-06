@@ -6,7 +6,7 @@
 
 ### Environment Setup
 
-## Step 1: Set up a Python environment
+### Step 1: Set up a Python environment
 
 We recommend creating a virtual Python environment with [Anaconda](https://docs.anaconda.com/free/anaconda/install/linux/):
 
@@ -15,7 +15,7 @@ conda create -n wppkg python=3.10
 conda activate wppkg
 ```
 
-## Step 2: Install Pytorch
+### Step 2: Install Pytorch
 
 Install `PyTorch` based on your system configuration. Refer to [PyTorch installation instructions](https://pytorch.org/get-started/previous-versions/) for the exact command. For example:
 
@@ -31,7 +31,7 @@ pip install torch==2.8.0 torchvision==0.23.0 torchaudio==2.8.0 --index-url https
 pip install torch==2.8.0 torchvision==0.23.0 torchaudio==2.8.0 --index-url https://download.pytorch.org/whl/cu129
 ```
 
-## Step 3: Install DeepSpeed (Optional)
+### Step 3: Install DeepSpeed (Optional)
 
 Install `DeepSpeed` based on your system configuration. Refer to [DeepSpeed installation instructions](https://www.deepspeed.ai/tutorials/advanced-install/) for the exact command. For example:
 
@@ -39,7 +39,7 @@ Install `DeepSpeed` based on your system configuration. Refer to [DeepSpeed inst
 pip install deepspeed
 ```
 
-## Step 4: Install wppkg and dependencies
+### Step 4: Install wppkg and dependencies
 
 To install `wppkg`, run:
 
