@@ -1,7 +1,10 @@
 import os
 import json
 import logging
-from typing import Union
+import numpy as np
+from tqdm.auto import tqdm
+from joblib import Parallel, delayed
+from typing import Union, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +42,52 @@ def write_json(obj: dict, fpath: str):
     os.makedirs(os.path.dirname(fpath), exist_ok=True)
     with open(fpath, "w") as f:
         json.dump(obj, f, indent=4, separators=(",", ": "))
+
+
+def get_sorted_indices_in_array_1d(
+    arr: np.ndarray,
+    ignore_zero_values: bool = False,
+    descending: bool = True,
+    **argsort_kwargs
+) -> np.ndarray:
+    if arr.ndim != 1:
+        raise ValueError(f"Expected 1D array, got shape: {arr.shape}")
+    
+    if not ignore_zero_values:
+        sorted_indices = np.argsort(arr, **argsort_kwargs)
+    else:
+        non_zero_indices = np.nonzero(arr)[0]
+        non_zero_values = arr[non_zero_indices]
+        sorted_indices = non_zero_indices[np.argsort(non_zero_values, **argsort_kwargs)]
+    return sorted_indices[::-1] if descending else sorted_indices
+
+
+def get_sorted_indices_in_array_2d_by_row(
+    arr: np.ndarray,
+    ignore_zero_values: bool = False,
+    descending: bool = True,
+    stable: Optional[bool] = None,
+    n_jobs: int = 1,
+    enable_tqdm: bool = True,
+    **argsort_kwargs
+) -> Union[np.ndarray, List[np.ndarray]]:
+    if arr.ndim != 2:
+        raise ValueError(f"Expected 2D array, got shape: {arr.shape}")
+
+    if not ignore_zero_values:
+        sorted_indices = np.argsort(arr, axis=1, **argsort_kwargs)
+        return sorted_indices[:, ::-1] if descending else sorted_indices
+    else:
+        sorted_indices = Parallel(n_jobs=n_jobs)(
+            delayed(get_sorted_indices_in_array_1d)(
+                arr=row, 
+                ignore_zero_values=ignore_zero_values, 
+                descending=descending,
+                stable=stable,
+                **argsort_kwargs
+            ) for row in tqdm(arr, disable=not enable_tqdm)
+        )
+        return sorted_indices
 
 
 class Accumulator:
