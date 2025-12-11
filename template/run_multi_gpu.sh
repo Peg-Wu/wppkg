@@ -36,7 +36,7 @@ echo "Using Port: $RANDOM_PORT"
 export CUDA_VISIBLE_DEVICES="1,4"
 accelerate launch \
     --config_file="./default_config.yaml" \
-    --num_processes=1 \
+    --num_processes=2 \
     --main_process_port=$RANDOM_PORT \
     train.py \
     $TRAINPARAMS \
