@@ -10,16 +10,38 @@ from typing import Union, List, Optional
 logger = logging.getLogger(__name__)
 
 
-def setup_logging_basic(
-    main_process_level: Union[str, int] = logging.INFO,
-    other_process_level: Union[str, int] = logging.WARN,
-    local_rank: int = -1
+def setup_root_logger(
+    log_file: str = None,
+    log_file_mode: str = "w",
+    main_process_level: int = logging.INFO,
+    other_process_level: int = logging.WARN,
+    local_rank: int = -1,
 ):
-    logging.basicConfig(
-        format="%(asctime)s | %(levelname)s | %(filename)s:%(lineno)s | %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-        level=main_process_level if local_rank in [-1, 0] else other_process_level,
+    """Configure root logger. Only rank 0 writes to file."""
+    logger = logging.getLogger()
+    logger.setLevel(logging.DEBUG)
+
+    if logger.handlers:
+        logger.handlers.clear()
+
+    fmt = logging.Formatter(
+        fmt="%(asctime)s | %(levelname)s | %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S"
     )
+
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(
+        main_process_level if local_rank in [-1, 0] else other_process_level
+    )
+    console_handler.setFormatter(fmt)
+    logger.addHandler(console_handler)
+
+    if log_file is not None and local_rank in [-1, 0]:
+        os.makedirs(os.path.dirname(log_file), exist_ok=True)
+        file_handler = logging.FileHandler(log_file, mode=log_file_mode, encoding="utf-8")
+        file_handler.setLevel(main_process_level)
+        file_handler.setFormatter(fmt)
+        logger.addHandler(file_handler)
 
 
 def read_json(
@@ -115,14 +137,24 @@ def get_sorted_indices_in_array_2d_by_row(
 
 class Accumulator:
     """For accumulating sums over `n` variables."""
-    def __init__(self, n):
-        self.data = [0.0] * n
+    def __init__(self, name: list[str]):
+        self.name = name
+        self.data = [0.0] * len(name)
+        self.add_times = 0
 
     def add(self, *args):
         self.data = [a + float(b) for a, b in zip(self.data, args)]
+        self.add_times += 1
+    
+    def mean(self):
+        self.data = [a / self.add_times for a in self.data]
 
     def reset(self):
         self.data = [0.0] * len(self.data)
+        self.add_times = 0
+    
+    def to_dict(self):
+        return {name: data for name, data in zip(self.name, self.data)}
 
     def __getitem__(self, idx):
         return self.data[idx]

@@ -2,16 +2,29 @@ import os
 import math
 import torch
 import logging
+import evaluate
 import datasets
 import transformers
+import pandas as pd
 from tqdm.auto import tqdm
 from typing import Optional, Union
 from accelerate.utils import set_seed
 from torch.utils.data import DataLoader
 from dataclasses import dataclass, field
+from torch.utils.data import random_split
 from accelerate import Accelerator, DeepSpeedPlugin
-from transformers import HfArgumentParser, SchedulerType, get_scheduler
-from wppkg import setup_root_logger, print_trainable_parameters, Accumulator
+from wppkg import (
+    setup_root_logger, 
+    print_trainable_parameters, 
+    Accumulator
+)
+from transformers import (
+    HfArgumentParser, 
+    SchedulerType, 
+    get_scheduler, 
+    BertTokenizer, 
+    BertForSequenceClassification
+)
 
 logger = logging.getLogger(__name__)
 
@@ -173,8 +186,38 @@ class TrainingArguments:
             self.checkpointing_steps = int(self.checkpointing_steps)
 
 
+@dataclass
+class ModelArguments:
+    model_name_or_path: str = field(
+        default="hfl/rbt3"
+    )
+
+
+@dataclass
+class DataArguments:
+    train_file: str = field(
+        default="./ChnSentiCorp_htl_all.csv"
+    )
+
+
+class CustomDataset(torch.utils.data.Dataset):
+    def __init__(self, train_file: str) -> None:
+        super().__init__()
+        self.data = pd.read_csv(train_file)
+        self.data = self.data.dropna()
+
+    def __getitem__(self, index):
+        return self.data.iloc[index]["review"], self.data.iloc[index]["label"]
+    
+    def __len__(self):
+        return len(self.data)
+
+
 def main():
-    train_args, = HfArgumentParser(TrainingArguments).parse_args_into_dataclasses()
+    parser = HfArgumentParser((ModelArguments, DataArguments, TrainingArguments))
+    model_args, data_args, train_args = parser.parse_args_into_dataclasses()
+    model_args: ModelArguments
+    data_args: DataArguments
     train_args: TrainingArguments
 
     # Initialize the accelerator.
@@ -204,12 +247,30 @@ def main():
     if train_args.seed is not None:
         set_seed(train_args.seed)
     
-    # TODO: Create datasets
-    train_dataset = ...
-    eval_dataset = ...
+    # Create datasets
+    dataset = CustomDataset(train_file=data_args.train_file)
+    train_dataset, eval_dataset = random_split(
+        dataset, 
+        lengths=[0.8, 0.2], 
+        generator=torch.Generator().manual_seed(train_args.seed)
+    )
 
-    # TODO: Create data_collator
-    data_collator = ...
+    # Create data_collator
+    tokenizer = BertTokenizer.from_pretrained(model_args.model_name_or_path)
+    def collate_func(batch):
+        texts, labels = [], []
+        for item in batch:
+            texts.append(item[0])
+            labels.append(item[1])
+        inputs = tokenizer(
+            texts, 
+            max_length=128, 
+            padding="max_length", 
+            truncation=True, 
+            return_tensors="pt"
+        )
+        inputs["labels"] = torch.tensor(labels)
+        return inputs
 
     # Create dataloaders
     common_dataloader_kwargs = {
@@ -222,26 +283,25 @@ def main():
         train_dataset,
         shuffle=True,
         batch_size=train_args.per_device_train_batch_size,
-        collate_fn=data_collator,
+        collate_fn=collate_func,
         **common_dataloader_kwargs,
     )
     eval_dataloader = DataLoader(
         eval_dataset,
         shuffle=False,
         batch_size=train_args.per_device_eval_batch_size,
-        collate_fn=data_collator,
+        collate_fn=collate_func,
         **common_dataloader_kwargs,
     )
 
-    # TODO: Create model
-    model = ...
-
+    # Create model
+    model = BertForSequenceClassification.from_pretrained(model_args.model_name_or_path)
     if accelerator.is_main_process:
         print("*" * 88)
         print_trainable_parameters(model)
         print("*" * 88)
 
-    # TODO: Create optimizer
+    # Create optimizer
     # Split weights in two groups, one with weight decay and the other not. (Optional)
     no_decay = ["bias", "LayerNorm.weight", "RMSNorm.weight"]
     optimizer_grouped_parameters = [
@@ -293,14 +353,13 @@ def main():
     # We need to initialize the trackers we use, and also store our configuration.
     # The trackers initializes automatically on the main process.
     if train_args.with_tracking:
-        # TODO: If there are parameters beyond the existing train_args, they can also be added to experiment_config.
-        experiment_config = vars(train_args)
+        # If there are parameters beyond the existing train_args, they can also be added to experiment_config.
+        experiment_config = vars(train_args) | vars(data_args) | vars(model_args)
         # TensorBoard cannot log Enums, need the raw value
         if isinstance(experiment_config["lr_scheduler_type"], SchedulerType):
             experiment_config["lr_scheduler_type"] = experiment_config["lr_scheduler_type"].value
         accelerator.init_trackers("runs", experiment_config)
     
-    # TODO: Modify the training logic to adapt to your own model.
     # Train!
     total_batch_size = train_args.per_device_train_batch_size * accelerator.num_processes * train_args.gradient_accumulation_steps
 
@@ -349,8 +408,7 @@ def main():
     progress_bar.update(completed_steps)
 
     # Inner training loop
-    # TODO: Add additional losses if needed.
-    accumulator_train = Accumulator(name=["total_loss", ..., ..., ...])
+    accumulator_train = Accumulator(name=["total_loss"])
     for epoch in range(starting_epoch, train_args.num_train_epochs):
         model.train()
         
@@ -362,11 +420,7 @@ def main():
         for step, batch in enumerate(active_dataloader):
             with accelerator.accumulate(model):
                 outputs = model(**batch)
-                # TODO: Add additional losses if needed.
                 loss = outputs.loss
-                ...
-                ...
-                ...
                 accelerator.backward(loss)
                 if accelerator.sync_gradients:
                     grad_norm = accelerator.clip_grad_norm_(model.parameters(), train_args.max_grad_norm)
@@ -380,12 +434,8 @@ def main():
                 completed_steps += 1
             
             # We keep track of the loss at each logging_steps
-            # TODO: Add additional losses if needed.
             accumulator_train.add(
-                accelerator.reduce(loss.detach().clone(), "mean").item(),
-                ...,
-                ...,
-                ...,
+                accelerator.reduce(loss.detach().clone(), "mean").item()
             )
             
             # Log training progress
@@ -422,51 +472,36 @@ def main():
             if completed_steps >= train_args.max_train_steps:
                 break
         
-        # NOTE: Validate once per epoch
         model.eval()
-        # TODO: Add additional losses if needed.
         losses = []
-        ...
-        ...
-        ...
+        metric = evaluate.load("./metrics/accuracy")
         for step, batch in enumerate(eval_dataloader):
             with torch.no_grad():
                 outputs = model(**batch)
-            # TODO: Add additional losses if needed.
             loss = outputs.loss
             losses.append(accelerator.gather_for_metrics(loss.repeat(train_args.per_device_eval_batch_size)))
-            ...
-            ...
-            ...
-            # TODO: Add other metrics if needed.
-            # predictions = outputs.logits.argmax(dim=-1)
-            # predictions, references = accelerator.gather_for_metrics((predictions, batch["labels"]))
-            # metric.add_batch(
-            #     predictions=predictions,
-            #     references=references,
-            # )
 
-        # TODO: Add additional losses if needed.
+            # Add other metrics if needed.
+            predictions = outputs.logits.argmax(dim=-1)
+            predictions, references = accelerator.gather_for_metrics((predictions, batch["labels"]))
+            metric.add_batch(
+                predictions=predictions,
+                references=references
+            )
+
         losses = torch.cat(losses)
         eval_loss = torch.mean(losses)
-        ...
-        ...
-        ...
-        # TODO: Add additional metrics if needed.
-        # eval_metric = metric.compute()
+        eval_metric = metric.compute()
 
-        logger.info(...)
+        # Log evaluation progress
+        eval_log_dict = {
+            "eval_loss": eval_loss.item(),
+            **eval_metric
+        }
+        logger.info({"epoch": epoch, **eval_log_dict})
 
         if train_args.with_tracking:
-            accelerator.log(
-                {
-                    "eval_loss": eval_loss,
-                    ...,
-                    ...,
-                    ...,
-                },
-                step=epoch
-            )
+            accelerator.log(eval_log_dict, step=epoch)
 
         if train_args.checkpointing_steps == "epoch":
             output_dir = f"epoch_{epoch}"

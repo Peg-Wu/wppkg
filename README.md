@@ -22,7 +22,7 @@ Install `PyTorch` based on your system configuration. Refer to [PyTorch installa
 - You may choose any version to install, but make sure the PyTorch version is not too old.
 
 ```bash
-# Installation Example: torch v2.9.0
+# Installation Example: torch v2.8.0
 # CUDA 12.6
 pip install torch==2.8.0 torchvision==0.23.0 torchaudio==2.8.0 --index-url https://download.pytorch.org/whl/cu126
 # CUDA 12.8
@@ -46,3 +46,14 @@ To install `wppkg`, run:
 ```bash
 pip install wppkg
 ```
+
+Or install from github:
+
+```python
+git clone https://github.com/Peg-Wu/wppkg
+cd wppkg
+pip install -e . [--no-deps]
+```
+
+
+
