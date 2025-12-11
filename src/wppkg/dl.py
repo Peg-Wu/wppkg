@@ -1,6 +1,6 @@
+import torch
 import multiprocessing as mp
 
-import torch
 from torch import nn
 from pathlib import Path
 from collections.abc import Mapping
@@ -111,7 +111,7 @@ def hf_download(
 
 
 def generate_default_deepspeed_config(
-    config_name: Literal["zero2", "zero2_offload", "zero3", "zero3_offload"],
+    config_name: Literal["zero1", "zero2", "zero2_offload", "zero3", "zero3_offload"],
     save_path: str
 ):
     assert Path(save_path).suffix.lower() == ".json", "Invalid path: must end with .json"
