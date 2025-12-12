@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "wppkg"
-version = "0.0.4"
+version = "0.0.5"
 authors = [
   { name="Pengpeng Wu", email="peg2_wu@163.com" },
 ]
