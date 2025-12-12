@@ -10,94 +10,6 @@ from typing import Union, List, Optional
 logger = logging.getLogger(__name__)
 
 
-def _configure_logger(
-    logger: logging.Logger,
-    log_file: str = None,
-    log_file_mode: str = "w",
-    fmt: str = "%(asctime)s | %(levelname)s | %(message)s",
-    datefmt: str = "%Y-%m-%d %H:%M:%S",
-    main_process_level: int = logging.INFO,
-    other_process_level: int = logging.WARN,
-    local_rank: int = -1,
-):
-    """Shared logic for configuring both root and independent loggers."""
-    logger.setLevel(logging.DEBUG)
-
-    # ---- Clear existing handlers ----
-    if logger.handlers:
-        logger.handlers.clear()
-
-    formatter = logging.Formatter(fmt=fmt, datefmt=datefmt)
-
-    # ---- Console handler ----
-    console_handler = logging.StreamHandler()
-    console_handler.setLevel(
-        main_process_level if local_rank in [-1, 0] else other_process_level
-    )
-    console_handler.setFormatter(formatter)
-    logger.addHandler(console_handler)
-
-    # ---- File handler ----
-    if log_file is not None and local_rank in [-1, 0]:
-        os.makedirs(os.path.dirname(log_file), exist_ok=True)
-        file_handler = logging.FileHandler(
-            log_file, mode=log_file_mode, encoding="utf-8"
-        )
-        file_handler.setLevel(main_process_level)
-        file_handler.setFormatter(formatter)
-        logger.addHandler(file_handler)
-
-
-def setup_root_logger(
-    log_file: str = None,
-    log_file_mode: str = "w",
-    fmt: str = "%(asctime)s | %(levelname)s | %(message)s",
-    datefmt: str = "%Y-%m-%d %H:%M:%S",
-    main_process_level: int = logging.INFO,
-    other_process_level: int = logging.WARN,
-    local_rank: int = -1,
-):
-    """Configure root logger."""
-    logger = logging.getLogger()  # root logger
-    _configure_logger(
-        logger,
-        log_file,
-        log_file_mode,
-        fmt,
-        datefmt,
-        main_process_level,
-        other_process_level,
-        local_rank,
-    )
-    return logger
-
-
-def get_logger(
-    name: str,
-    log_file: str = None,
-    log_file_mode: str = "w",
-    fmt: str = "%(asctime)s | %(levelname)s | %(message)s",
-    datefmt: str = "%Y-%m-%d %H:%M:%S",
-    main_process_level: int = logging.INFO,
-    other_process_level: int = logging.WARN,
-    local_rank: int = -1,
-):
-    """Create a logger independent from root."""
-    logger = logging.getLogger(name)
-    logger.propagate = False
-    _configure_logger(
-        logger,
-        log_file,
-        log_file_mode,
-        fmt,
-        datefmt,
-        main_process_level,
-        other_process_level,
-        local_rank,
-    )
-    return logger
-
-
 def read_json(
     fpath: str, 
     convert_to_easydict: bool = True
@@ -191,26 +103,26 @@ def get_sorted_indices_in_array_2d_by_row(
 
 class Accumulator:
     """For accumulating sums over `n` variables."""
-    def __init__(self, name: list[str]):
+    def __init__(self, name: list[str]) -> None:
         self.name = name
         self.data = [0.0] * len(name)  # initialize to zero
         self.add_times = 0  # track number of times `add` is called
 
-    def add(self, *args):
+    def add(self, *args) -> None:
         self.data = [a + float(b) for a, b in zip(self.data, args)]
         self.add_times += 1
     
-    def mean(self):
+    def mean(self) -> None:
         self.data = [a / self.add_times for a in self.data]
 
-    def reset(self):
+    def reset(self) -> None:
         self.data = [0.0] * len(self.data)
         self.add_times = 0
     
-    def to_dict(self):
+    def to_dict(self) -> dict:
         return {name: data for name, data in zip(self.name, self.data)}
 
-    def __getitem__(self, key: Union[int, str]):
+    def __getitem__(self, key: Union[int, str]) -> float:
         # key is int → index lookup
         if isinstance(key, int):
             return self.data[key]

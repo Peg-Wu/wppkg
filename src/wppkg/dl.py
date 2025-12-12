@@ -70,7 +70,7 @@ def hf_download(
     token: Optional[Union[bool, str]] = None,
     max_workers: int = 8,
     endpoint: Optional[str] = "https://hf-mirror.com"  # or https://huggingface.co
-):
+) -> None:
     r"""Download huggingface repo files.
 
     Args:
@@ -113,7 +113,7 @@ def hf_download(
 def generate_default_deepspeed_config(
     config_name: Literal["zero1", "zero2", "zero2_offload", "zero3", "zero3_offload"],
     save_path: str
-):
+) -> None:
     assert Path(save_path).suffix.lower() == ".json", "Invalid path: must end with .json"
 
     config_file = Path(__file__).resolve().parent / "deepspeed_config" / (config_name + ".json")
