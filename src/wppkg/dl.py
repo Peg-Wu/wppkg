@@ -415,6 +415,26 @@ class DataCollatorWithPadding(PaddingMixin):
         return batch
 
 
+class EarlyStoppingCallback:
+    "A callback class that helps with early stopping"
+    def __init__(self, min_delta=0, patience=5):
+        self.min_delta = min_delta
+        self.patience = patience
+        self.counter = 0
+        self.lowest_loss = float("inf")
+
+    def check_early_stopping(self, eval_loss):
+        delta = self.lowest_loss - eval_loss
+        if delta >= self.min_delta:
+            self.lowest_loss = eval_loss
+            self.counter = 0
+        else:
+            self.counter += 1
+            if self.counter >= self.patience:
+                return True
+        return False
+
+
 @dataclass
 class TrainingArguments:
     seed: int = field(
@@ -453,6 +473,15 @@ class TrainingArguments:
         default=1,
         metadata={
             "help": "Perform evaluation every n epochs."
+        }
+    )
+    earlystop_patience: Optional[int] = field(
+        default=None,
+        metadata={
+            "help": (
+                "By default, training will be early-stopped if the evaluation loss fails to improve for `earlystop_patience` consecutive epochs."
+                "If `earlystop_patience` is set to `None`, early stopping is disabled."
+            )
         }
     )
     per_device_train_batch_size: int = field(
@@ -623,6 +652,13 @@ class Trainer:
             self.args.max_train_steps = self.args.num_train_epochs * self.num_update_steps_per_epoch
         # Afterwards we recalculate our number of training epochs
         self.args.num_train_epochs = math.ceil(self.args.max_train_steps / self.num_update_steps_per_epoch)
+
+        # EarlyStop CallBack
+        self.earlystop_callback = (
+            EarlyStoppingCallback(patience=self.args.earlystop_patience)
+            if self.args.earlystop_patience is not None
+            else None
+        )
 
         self._init_trackers()
 
@@ -886,6 +922,15 @@ class Trainer:
                 self.accelerator.save_state(output_dir)
                 # Save the model checkpoint et al.
                 self._save(os.path.join(output_dir, "model"))
+            
+            # EarlyStop: check if we should stop the training on any processes
+            if self.earlystop_callback is not None:
+                if self.earlystop_callback.check_early_stopping(eval_log_dict["eval_loss"]):
+                    self.accelerator.set_trigger()
+                # If so, we break the loop
+                if self.accelerator.check_trigger():
+                    self.logger.info(f"Model has not improved for {self.args.earlystop_patience} epochs, so we halt the training session.")
+                    break
 
         # Save the last model checkpoint.
         self._save(os.path.join(self.args.output_dir, "last_model"))
