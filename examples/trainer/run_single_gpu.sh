@@ -1,10 +1,12 @@
 TRAINPARAMS="
     --seed=42 \
     --output_dir="./trainer_output" \
-    --num_train_epochs=5 \
+    --num_train_epochs=20 \
     --logging_steps=20 \
     --per_device_train_batch_size=8 \
     --per_device_eval_batch_size=8 \
+    --eval_every_n_epochs=1 \
+    --earlystop_patience=5 \
     --gradient_accumulation_steps=1 \
     --max_grad_norm=1.0 \
     --learning_rate=5e-5 \
