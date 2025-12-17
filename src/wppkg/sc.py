@@ -113,7 +113,8 @@ def split_anndata_on_celltype(
 
 def reverse_adata_to_raw_counts(
     adata: Union[str, ad.AnnData],
-    int_tol: float = 1e-3
+    int_tol: float = 1e-3,
+    return_scaling_factors: bool = False
 ) -> ad.AnnData:
     if isinstance(adata, str):
         logger.info(f"Reading adata from {adata} ...")
@@ -138,7 +139,7 @@ def reverse_adata_to_raw_counts(
     min_value = X[np.arange(X.shape[0]), [row[0] for row in sorted_indices]]
 
     logger.info("Start reversing back to raw counts.")
-    res = []
+    res, scaling_factors = [], []
     for cell_idx in tqdm(range(len(adata))):
         reverse_success = False
         for assume_min_value in range(1, 101):
@@ -148,6 +149,7 @@ def reverse_adata_to_raw_counts(
             is_near_integer = np.isclose(reversed_x, round_reversed_X, atol=int_tol)
             if np.all(is_near_integer):
                 res.append(round_reversed_X)
+                scaling_factors.append(coef)
                 reverse_success = True
                 break
         if not reverse_success:
@@ -158,4 +160,7 @@ def reverse_adata_to_raw_counts(
     reversed_raw_counts_X = np.vstack(res).astype(np.float32)
     adata.X = csr_matrix(reversed_raw_counts_X)
 
-    return adata
+    if return_scaling_factors:
+        return adata, scaling_factors
+    else:
+        return adata
