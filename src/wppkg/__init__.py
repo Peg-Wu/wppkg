@@ -8,7 +8,8 @@ from .dl import (
 
 from .sc import (
     guess_is_lognorm,
-    split_anndata_on_celltype
+    split_anndata_on_celltype,
+    reverse_adata_to_raw_counts
 )
 
 from .utils import (

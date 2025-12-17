@@ -1,7 +1,12 @@
 import logging
 import numpy as np
+import scanpy as sc
 import anndata as ad
+from typing import Union
+from tqdm.auto import tqdm
+from scipy.sparse import issparse
 from scipy.sparse import csc_matrix, csr_matrix
+from .utils import get_sorted_indices_in_array_2d_by_row
 
 logger = logging.getLogger(__name__)
 
@@ -104,3 +109,53 @@ def split_anndata_on_celltype(
         ct: adata[adata.obs[celltype_col] == ct]
         for ct in adata.obs[celltype_col].unique()
     }
+
+
+def reverse_adata_to_raw_counts(
+    adata: Union[str, ad.AnnData],
+    int_tol: float = 1e-3
+):
+    if isinstance(adata, str):
+        logger.info(f"Reading adata from {adata} ...")
+        adata = sc.read_h5ad(adata)
+    else:
+        adata = adata.copy()
+
+    if not guess_is_lognorm(adata):
+        raise ValueError("Input adata is likely in raw (non-log1p) scale.")
+    
+    X = adata.X.toarray() if issparse(adata.X) else adata.X
+    X = np.expm1(X)
+    sorted_indices = get_sorted_indices_in_array_2d_by_row(
+        arr=X,
+        ignore_zero_values=True,
+        descending=False,
+        stable=None,
+        n_jobs=1,
+        enable_tqdm=False
+    )
+    # Get the minimum non-zero value for each cell.
+    min_value = X[np.arange(X.shape[0]), [row[0] for row in sorted_indices]]
+
+    logger.info("Start reversing back to raw counts.")
+    res = []
+    for cell_idx in tqdm(range(len(adata))):
+        reverse_success = False
+        for assume_min_value in range(1, 101):
+            coef = min_value[cell_idx] / assume_min_value
+            reversed_x = X[cell_idx] / coef
+            round_reversed_X = np.round(reversed_x)
+            is_near_integer = np.isclose(reversed_x, round_reversed_X, atol=int_tol)
+            if np.all(is_near_integer):
+                res.append(round_reversed_X)
+                reverse_success = True
+                break
+        if not reverse_success:
+            raise ValueError(
+                f"Failed to reverse raw counts for cell {cell_idx}."
+            )
+    logger.info("Successfully reversed back to raw counts.")
+    reversed_raw_counts_X = np.vstack(res).astype(np.float32)
+    adata.X = csr_matrix(reversed_raw_counts_X)
+
+    return adata
