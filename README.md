@@ -52,7 +52,18 @@ Or install from github:
 ```python
 git clone https://github.com/Peg-Wu/wppkg
 cd wppkg
-pip install -e . [--no-deps]
+pip install -e .
+
+# w/o dependencies
+pip install -e . --no-deps
+```
+
+### Update wppkg
+
+If you want to update all dependencies of `wppkg` except `torch`, you can run the following command:
+
+```bash
+pip install -U $(pip show wppkg | sed -n 's/^Requires: //p' | tr ',' ' ' | xargs -n1 | grep -vi '^torch$')
 ```
 
 
