@@ -3,7 +3,8 @@ from .dl import (
     print_trainable_parameters,
     generate_default_deepspeed_config,
     TrainingArguments, Trainer,
-    DataCollatorWithPadding, DataCollatorForLanguageModeling
+    DataCollatorWithPadding, DataCollatorForLanguageModeling,
+    NoRoPE
 )
 
 from .sc import (

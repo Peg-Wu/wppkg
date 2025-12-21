@@ -963,3 +963,30 @@ class Trainer:
             "eval_loss": eval_loss.item(),
             # **eval_metrics
         }
+
+
+class NoRoPE(nn.Module):
+    """
+    A drop-in replacement for LlamaRotaryEmbedding that always returns:
+      cos = all ones, sin = all zeros
+    of shape (1, seq_len, head_dim), so rotary has no effect.
+    """
+
+    def __init__(self, head_dim: int):
+        super().__init__()
+        # head_dim = config.hidden_size // config.num_attention_heads
+        self.head_dim = head_dim
+
+    @torch.no_grad()
+    def forward(self, hidden_states: torch.Tensor, position_ids: torch.LongTensor):
+        r"""
+            - hidden_states: (batch_size, seq_len, hidden_dim)
+            - position_ids: (1, seq_len)
+        """
+        _batch_size, seq_len, _hidden_dim = hidden_states.shape
+
+        # Create cos = ones, sin = zeros
+        #   shape --> (1, seq_len, head_dim)
+        cos = hidden_states.new_ones(1, seq_len, self.head_dim)
+        sin = hidden_states.new_zeros(1, seq_len, self.head_dim)
+        return cos, sin
