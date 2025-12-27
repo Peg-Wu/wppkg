@@ -21,7 +21,7 @@ from .utils import (
 
 from .logging import (
     setup_root_logger, get_logger, 
-    set_verbosity_info
+    set_verbosity_info, set_verbosity_warning
 )
 
 set_verbosity_info()
