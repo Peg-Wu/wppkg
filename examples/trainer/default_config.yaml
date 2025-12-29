@@ -1,6 +1,13 @@
 compute_environment: LOCAL_MACHINE
 debug: false
-distributed_type: DEEPSPEED
+
+# Specify distributed_type as `DEEPSPEED` or `MULTI_GPU`
+# If you are using MULTI-GPU, please do not pass a DeepSpeed config file.
+distributed_type: DEEPSPEED  # MULTI-GPU
+
+# Specify the number of GPUs to use
+num_processes: 2
+
 downcast_bf16: 'no'
 enable_cpu_affinity: false
 machine_rank: 0

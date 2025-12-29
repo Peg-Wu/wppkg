@@ -32,14 +32,9 @@ DATAPARAMS="
     --train_file="./ChnSentiCorp_htl_all.csv""
 
 
-RANDOM_PORT=$(shuf -i 1024-65535 -n 1)
-echo "Using Port: $RANDOM_PORT"
-
 export CUDA_VISIBLE_DEVICES="1,4"
 accelerate launch \
     --config_file="./default_config.yaml" \
-    --num_processes=2 \
-    --main_process_port=$RANDOM_PORT \
     train.py \
     $TRAINPARAMS \
     $MODELPARAMS \
