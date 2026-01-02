@@ -546,7 +546,7 @@ class TrainingArguments:
     )
     checkpointing_steps: Optional[Union[int, str]]= field(
         default=None,
-        metadata={"help": "Whether thr variousstates should be saved at the end of every n steps, or `epoch` for each epoch."}
+        metadata={"help": "When to save checkpoints: int = every N steps, 'epoch' = every epoch, 'epoch-k' = every k epochs."}
     )
     resume_from_checkpoint: Optional[str] = field(
         default=None,
@@ -925,12 +925,20 @@ class Trainer:
                         self.logger.info(f"Model has not improved for {self.args.earlystop_patience} evaluations, so we halt the training session.")
                         break
 
-            if self.args.checkpointing_steps == "epoch":
-                output_dir = f"epoch_{epoch}"
-                output_dir = os.path.join(self.args.output_dir, output_dir)
-                self.accelerator.save_state(output_dir)
-                # Save the model checkpoint et al.
-                self._save(os.path.join(output_dir, "model"))
+            # NOTE: Allow checkpointing_steps to be in the format "epoch-<number>", meaning a checkpoint is saved every <number> epochs.
+            if "epoch" in self.args.checkpointing_steps:
+                checkpointing_every_n_epochs = (
+                    1 
+                    if self.args.checkpointing_steps == "epoch" 
+                    else int(self.args.checkpointing_steps.split("-")[-1])
+                )
+
+                if (epoch + 1) % checkpointing_every_n_epochs == 0:
+                    output_dir = f"epoch_{epoch}"
+                    output_dir = os.path.join(self.args.output_dir, output_dir)
+                    self.accelerator.save_state(output_dir)
+                    # Save the model checkpoint et al.
+                    self._save(os.path.join(output_dir, "model"))
 
         # Save the last model checkpoint.
         self._save(os.path.join(self.args.output_dir, "last_model"))
