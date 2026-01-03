@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/logo.png" alt="wppkg logo" width="120">
+  <img src="assets/logo.png" alt="wppkg logo" width="240">
 </p>
 
 <p align="center">
@@ -78,6 +78,8 @@ If you want to update all dependencies of `wppkg` except `torch`, you can run th
 ```bash
 pip install -U $(pip show wppkg | sed -n 's/^Requires: //p' | tr ',' ' ' | xargs -n1 | grep -vi '^torch$')
 ```
+
+---
 
 ## Trainer Tips
 
