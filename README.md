@@ -1,6 +1,19 @@
-# wppkg
+<p align="center">
+  <img src="assets/logo.png" alt="wppkg logo" width="120">
+</p>
 
-- A package I developed for my daily work.
+<p align="center">
+  <a href="https://pypi.org/project/wppkg/">
+    <img src="https://img.shields.io/pypi/v/wppkg.svg" alt="PyPI version">
+  </a>
+  <a href="https://pepy.tech/project/wppkg">
+    <img src="https://pepy.tech/badge/wppkg" alt="Total downloads">
+  </a>
+</p>
+
+wppkg is a package I developed for my daily work.
+
+---
 
 ## Installation
 
