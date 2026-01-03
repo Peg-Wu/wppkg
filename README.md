@@ -66,5 +66,9 @@ If you want to update all dependencies of `wppkg` except `torch`, you can run th
 pip install -U $(pip show wppkg | sed -n 's/^Requires: //p' | tr ',' ' ' | xargs -n1 | grep -vi '^torch$')
 ```
 
+## Trainer Tips
 
+- Early stopping does not currently support resuming training. If training is forcibly resumed, the early stopping callback will be reinitialized.
+- If you enable early stopping, ensure that `eval_every_n_epochs` and `checkpointing_steps` are aligned, as the Trainer does not automatically save the best model. 
+- The final model is always saved at the end of training, even if early stopping is triggered.
 

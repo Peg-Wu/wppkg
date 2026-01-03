@@ -1,7 +1,7 @@
 TRAINPARAMS="
     --seed=42 \
     --output_dir="./trainer_output" \
-    --num_train_epochs=20 \
+    --num_train_epochs=5 \
     --logging_steps=20 \
     --per_device_train_batch_size=8 \
     --per_device_eval_batch_size=8 \
@@ -16,11 +16,12 @@ TRAINPARAMS="
     --mixed_precision="bf16" \
     --with_tracking=True \
     --report_to="tensorboard" \
-    --checkpointing_steps=500 \
+    --checkpointing_steps="epoch" \
     --dataloader_pin_memory=True \
     --dataloader_persistent_workers=True \
     --dataloader_num_workers=4 \
-    --dataloader_prefetch_factor=2"
+    --dataloader_prefetch_factor=2 \
+    --deepspeed="./ds_zero2.json""
 
 
 MODELPARAMS="
@@ -31,8 +32,10 @@ DATAPARAMS="
     --train_file="./ChnSentiCorp_htl_all.csv""
 
 
-export CUDA_VISIBLE_DEVICES="1"
-python train.py \
+export CUDA_VISIBLE_DEVICES="1,4"
+accelerate launch \
+    --config_file="./default_config.yaml" \
+    train.py \
     $TRAINPARAMS \
     $MODELPARAMS \
     $DATAPARAMS
