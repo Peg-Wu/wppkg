@@ -521,6 +521,11 @@ class TrainingArguments:
             )
         }
     )
+    num_warmup_ratio: Optional[float] = field(
+        default=None, metadata={
+            "help": "Warmup ratio of total optimization steps, in the range [0, 1]. If specified, it will override `num_warmup_steps`."
+        }
+    )
     mixed_precision: str = field(
         default="bf16",
         metadata={
@@ -605,6 +610,8 @@ class TrainingArguments:
             )
         if self.checkpointing_steps is not None and self.checkpointing_steps.isdigit():
             self.checkpointing_steps = int(self.checkpointing_steps)
+        if self.num_warmup_ratio is not None:
+            assert 0 <= self.num_warmup_ratio <= 1, "`num_warmup_ratio` must be in the range [0, 1]."
 
 
 class Trainer:
@@ -744,13 +751,24 @@ class Trainer:
         return torch.optim.AdamW(optimizer_grouped_parameters, lr=self.args.learning_rate)
     
     def create_scheduler(self):
+        # total training steps
+        num_training_steps = (
+            self.args.max_train_steps
+            if self.overrode_max_train_steps
+            else self.args.max_train_steps * self.accelerator.num_processes
+        )
+
+        # total warmup steps
+        if self.args.num_warmup_ratio is not None:
+            num_warmup_steps = int(self.args.num_warmup_ratio * num_training_steps)
+        else:
+            num_warmup_steps = int(self.args.num_warmup_steps * self.accelerator.num_processes)
+
         return get_scheduler(
             name=self.args.lr_scheduler_type,
             optimizer=self.optimizer,
-            num_warmup_steps=self.args.num_warmup_steps * self.accelerator.num_processes,
-            num_training_steps=self.args.max_train_steps
-            if self.overrode_max_train_steps
-            else self.args.max_train_steps * self.accelerator.num_processes,
+            num_warmup_steps=num_warmup_steps,
+            num_training_steps=num_training_steps
         )
 
     def get_train_dataloader(self):
@@ -795,6 +813,8 @@ class Trainer:
             is_main_process=self.accelerator.is_main_process, 
             save_function=self.accelerator.save
         )
+        # Good practice: save your training arguments together with the trained model
+        torch.save(self.args, os.path.join(save_dir, "training_args.bin"))
     
     def train(self):
         # Train!
@@ -926,7 +946,7 @@ class Trainer:
                         break
 
             # NOTE: Allow checkpointing_steps to be in the format "epoch-<number>", meaning a checkpoint is saved every <number> epochs.
-            if "epoch" in self.args.checkpointing_steps:
+            if isinstance(self.args.checkpointing_steps, str):
                 checkpointing_every_n_epochs = (
                     1 
                     if self.args.checkpointing_steps == "epoch" 
