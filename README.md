@@ -87,3 +87,14 @@ pip install -U $(pip show wppkg | sed -n 's/^Requires: //p' | tr ',' ' ' | xargs
 - If you enable early stopping, ensure that `eval_every_n_epochs` and `checkpointing_steps` are aligned, as the Trainer does not automatically save the best model. 
 - The final model is always saved at the end of training, even if early stopping is triggered.
 
+## Star History
+
+<p align="center">
+  <a href="https://star-history.com/#Peg-Wu/wppkg&Date">
+    <img 
+      src="https://api.star-history.com/svg?repos=Peg-Wu/wppkg&type=Date"
+      width="600"
+      alt="Star History Chart"
+    />
+  </a>
+</p>
