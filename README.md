@@ -13,7 +13,7 @@ wppkg is a package I developed for my daily work.
 
 <details>
 <summary>🔥About Me</summary>
-<br>
+
 My main research interests are <b>Bioinformatics</b> and <b>Artificial Intelligence</b>.<br>
 Specifically, my main research direction is <b>AI Virtual Cell (AIVC)</b>, including:
 
