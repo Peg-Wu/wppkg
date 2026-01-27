@@ -8,6 +8,7 @@ from .dl import (
 )
 
 from .sc import (
+    UniformFeatureForAnnData,
     guess_is_lognorm,
     split_anndata_on_celltype,
     reverse_adata_to_raw_counts
