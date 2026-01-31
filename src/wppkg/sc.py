@@ -278,7 +278,7 @@ def reverse_adata_to_raw_counts(
     adata: Union[str, ad.AnnData],
     int_tol: float = 1e-3,
     return_scaling_factors: bool = False
-) -> ad.AnnData:
+) -> Union[ad.AnnData, tuple[ad.AnnData, list[float]]]:
     if isinstance(adata, str):
         logger.info(f"Reading adata from {adata} ...")
         adata = sc.read_h5ad(adata)
