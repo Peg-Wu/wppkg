@@ -5,7 +5,6 @@
 <p align="center">
   <a href="https://pypi.org/project/wppkg/"><img  alt="PyPI version" src="https://img.shields.io/pypi/v/wppkg.svg?color=purple"></a>
   <a href="https://pepy.tech/project/wppkg"><img alt="PyPI total downloads" src="https://pepy.tech/badge/wppkg"></a>
-  <a href="https://github.com/Peg-Wu/wppkg/blob/main/LICENSE"><img alt="Github" src="https://img.shields.io/github/license/Peg-Wu/wppkg.svg?color=green"></a>
   <a href="https://github.com/Peg-Wu/wppkg/releases"><img alt="GitHub release" src="https://img.shields.io/github/release/Peg-Wu/wppkg.svg?color=orange"></a>
 </p>
 
@@ -13,7 +12,6 @@ wppkg is a package I developed for my daily work.
 
 <details>
 <summary>🔥About Me</summary>
-
 My main research interests are <b>Bioinformatics</b> and <b>Artificial Intelligence</b>.<br>
 Specifically, my main research direction is <b>AI Virtual Cell (AIVC)</b>, including:
 
