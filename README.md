@@ -12,15 +12,9 @@ wppkg is a package I developed for my daily work.
 
 <details>
 <summary>🔥About Me</summary>
-My main research interests are <b>Bioinformatics</b> and <b>Artificial Intelligence</b>.<br>
-Specifically, my main research direction is <b>AI Virtual Cell (AIVC)</b>, including:
 
-- <b>Building foundation models for multi-omics</b>
-- <b>Single-cell perturbation prediction</b>
 
-Besides, I am also interested in <b>Reinforcement Learning (RL)</b> and <b>AI Agent Application Development</b>. I’m passionate about bringing cutting-edge AI techniques into single-cell biology to accelerate the development of AIVC.
-
-> VCs must work across biological scales, over time, and across data modalities and should help reveal the programming language of cellular systems and provide an interface to use it for engineering purposes.
+- CV: https://wppcv.readthedocs.io
 
 </details>
 
