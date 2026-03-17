@@ -1,6 +1,7 @@
 import os
 import json
 import logging
+import hashlib
 import numpy as np
 from pathlib import Path
 from tqdm.auto import tqdm
@@ -8,6 +9,15 @@ from joblib import Parallel, delayed
 from typing import Union, List, Optional
 
 logger = logging.getLogger(__name__)
+
+
+def get_string_md5(
+    s: str, 
+    encoding: str = "utf-8"
+):
+    md5_obj = hashlib.md5()
+    md5_obj.update(s.encode(encoding=encoding))
+    return md5_obj.hexdigest()
 
 
 def read_json(
