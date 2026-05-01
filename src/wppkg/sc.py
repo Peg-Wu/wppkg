@@ -7,6 +7,7 @@ from tqdm.auto import tqdm
 from scipy.sparse import issparse
 from typing import Union, Optional
 from scipy.sparse import csc_matrix, csr_matrix
+from torch.distributions import NegativeBinomial
 from .utils import get_sorted_indices_in_array_2d_by_row
 
 logger = logging.getLogger(__name__)
@@ -327,3 +328,15 @@ def reverse_adata_to_raw_counts(
         return adata, scaling_factors
     else:
         return adata
+
+
+def nb_nll(x, mu, theta, eps: float = 1e-6):
+    """
+    Negative‑binomial negative log‑likelihood.
+        x, mu : [..., G]
+        theta : [G] or [..., G]
+    returns scalar
+    """
+    logits = (mu + eps).log() - (theta + eps).log()  # NB parameterisation
+    dist = NegativeBinomial(total_count=theta, logits=logits)
+    return -dist.log_prob(x).mean()
