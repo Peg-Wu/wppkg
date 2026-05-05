@@ -12,7 +12,7 @@ from .sc import (
     guess_is_lognorm,
     split_anndata_on_celltype,
     reverse_adata_to_raw_counts,
-    nb_nll
+    nb_loss, zinb_loss
 )
 
 from .utils import (
