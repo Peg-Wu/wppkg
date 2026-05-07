@@ -347,12 +347,22 @@ def nb_loss(x, mu, theta, scale_factor=1.0, eps=1e-6):
 def zinb_loss(x, mean, disp, pi, scale_factor=1.0, ridge_lambda=0.0, eps=1e-10):
     """
     Zero-Inflated Negative Binomial Loss.
-        - mean: torch.clamp(torch.exp(...), min=1e-5, max=1e6)     [1e-5, 1e6]
+        - mean: 
+            - torch.clamp(torch.exp(...), min=1e-5, max=1e6)     [1e-5, 1e6]
+            - gene expression proportions
         - disp: torch.clamp(F.softplus(...), min=1e-4, max=1e4)    [1e-4, 1e4]
         - pi: torch.sigmoid(...)                                   (0, 1)
     
-    if normalized = raw x (1e4 / total_counts):
-        scale_factor = total_counts / 1e4
+    scale_factor:
+        - situ 1:
+            if normalized = raw x (1e4 / total_counts):
+                scale_factor = total_counts / 1e4
+        - situ 2:
+            Model outputs gene expression proportions. 
+                >>> px_scale_logits = model(...)
+                >>> px_scale = F.softmax(px_scale_logits, dim=-1)
+                >>> mean = px_scale * total_counts
+            In this case, scale_factor = total_counts
     """
     mean = mean * scale_factor
     t1 = torch.lgamma(disp + eps) + torch.lgamma(x + 1.0) - torch.lgamma(x + disp + eps)
