@@ -380,3 +380,46 @@ def zinb_loss(x, mean, disp, pi, scale_factor=1.0, ridge_lambda=0.0, eps=1e-10):
 
     result = torch.mean(result)
     return result
+
+
+def get_wmse_weigths(
+    adata_pert: sc.AnnData,
+    groupby: str = "target_gene",
+    method: str = "wilcoxon"  # t-test_overestim_var or wilcoxon
+) -> dict[np.ndarray]:
+    """
+    NOTE:
+        1. adata_pert should only contain perturbed cells and be log-normalized.
+        2. adata_pert.var_names should contain the gene names.
+
+    References:
+        - wilcoxon: https://www.biorxiv.org/content/10.64898/2026.05.02.722054v1
+        - t-test_overestim_var: https://arxiv.org/pdf/2506.22641
+    """
+
+    sc.tl.rank_genes_groups(
+        adata=adata_pert,
+        groupby=groupby,
+        reference="rest",
+        method=method
+    )  # TODO: accelerate using pdex
+
+    pert2weights = {}
+    for pert in tqdm(adata_pert.obs[groupby].unique()):
+        df = sc.get.rank_genes_groups_df(adata_pert, group=pert)
+        df = df.set_index("names").loc[adata_pert.var_names]  # align the order of genes to adata_pert.var_names
+
+        # step0: take the raw scores (e.g., t-statistic or z-score)
+        scores = df["scores"].values
+        # step1: absolute value
+        scores = np.abs(scores)
+        # step2: min-max normalization
+        scores = (scores - scores.min()) / (scores.max() - scores.min() + 1e-8)
+        # step3: amplify the effects by taking square
+        scores = scores ** 2
+        # step4: normalize the weights to sum up to 1
+        scores = scores / (scores.sum() + 1e-8)
+
+        pert2weights[pert] = scores
+
+    return pert2weights
