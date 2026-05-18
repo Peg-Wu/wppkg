@@ -351,6 +351,7 @@ def zinb_loss(x, mean, disp, pi, scale_factor=1.0, ridge_lambda=0.0, eps=1e-10):
             - torch.clamp(torch.exp(...), min=1e-5, max=1e6)     [1e-5, 1e6]
             - gene expression proportions
         - disp: torch.clamp(F.softplus(...), min=1e-4, max=1e4)    [1e-4, 1e4]
+            or torch.exp(torch.nn.Parameter(torch.randn(n_genes)))
         - pi: torch.sigmoid(...)                                   (0, 1)
     
     scale_factor:

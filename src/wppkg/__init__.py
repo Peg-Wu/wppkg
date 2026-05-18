@@ -16,7 +16,8 @@ from .sc import (
 )
 
 from .utils import (
-    get_string_md5,
+    suppress_output,
+    remove_non_alphanumeric, get_string_md5,
     read_json, write_json, Accumulator,
     generate_default_debugpy_config, debugpy_header,
     get_sorted_indices_in_array_1d, get_sorted_indices_in_array_2d_by_row
