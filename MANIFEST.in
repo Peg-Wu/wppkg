@@ -1,3 +1,2 @@
-include *
-
-exclude test.ipynb
+prune __pycache__
+global-exclude *.pyc

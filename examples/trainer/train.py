@@ -2,7 +2,7 @@ import torch
 import pandas as pd
 from dataclasses import dataclass, field
 from torch.utils.data import random_split
-from wppkg import TrainingArguments, Trainer
+from wppkg.dl import TrainingArguments, Trainer
 from transformers import HfArgumentParser, BertTokenizer, BertForSequenceClassification
 
 

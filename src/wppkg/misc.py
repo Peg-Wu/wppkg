@@ -7,7 +7,7 @@ import numpy as np
 from pathlib import Path
 from tqdm.auto import tqdm
 from joblib import Parallel, delayed
-from typing import Union, List, Optional
+from typing import Union, List, Optional, Literal
 
 logger = logging.getLogger(__name__)
 
@@ -83,11 +83,22 @@ def generate_default_debugpy_config(
     port: int = 5678,
     save_dir: str = "./"
 ):
-    config_file = Path(__file__).resolve().parent / "debugpy_config" / "launch.json"
+    config_file = Path(__file__).resolve().parent / "configs" / "debugpy_config" / "launch.json"
     cfg = read_json(config_file, convert_to_easydict=False)
     cfg["configurations"][-1]["connect"]["port"] = port
     save_path = Path(save_dir) / ".vscode" / "launch.json"
     write_json(cfg, save_path)
+
+
+def generate_default_deepspeed_config(
+    config_name: Literal["zero1", "zero2", "zero2_offload", "zero3", "zero3_offload"],
+    save_path: str
+) -> None:
+    assert Path(save_path).suffix.lower() == ".json", "Invalid path: must end with .json"
+
+    config_file = Path(__file__).resolve().parent / "deepspeed_config" / (config_name + ".json")
+
+    write_json(read_json(config_file, convert_to_easydict=False), save_path)
 
 
 def get_sorted_indices_in_array_1d(
@@ -134,40 +145,3 @@ def get_sorted_indices_in_array_2d_by_row(
             ) for row in tqdm(arr, disable=not enable_tqdm)
         )
         return sorted_indices
-
-
-class Accumulator:
-    """For accumulating sums over `n` variables."""
-    def __init__(self, name: list[str]) -> None:
-        self.name = name
-        self.data = [0.0] * len(name)  # initialize to zero
-        self.add_times = 0  # track number of times `add` is called
-
-    def add(self, *args) -> None:
-        self.data = [a + float(b) for a, b in zip(self.data, args)]
-        self.add_times += 1
-    
-    def mean(self) -> None:
-        self.data = [a / self.add_times for a in self.data]
-
-    def reset(self) -> None:
-        self.data = [0.0] * len(self.data)
-        self.add_times = 0
-    
-    def to_dict(self) -> dict:
-        return {name: data for name, data in zip(self.name, self.data)}
-
-    def __getitem__(self, key: Union[int, str]) -> float:
-        # key is int → index lookup
-        if isinstance(key, int):
-            return self.data[key]
-        
-        # key is str → name lookup
-        if isinstance(key, str):
-            try:
-                idx = self.name.index(key)
-            except ValueError:
-                raise KeyError(f"'{key}' not found in accumulator names {self.name}")
-            return self.data[idx]
-        
-        raise TypeError(f"Invalid key type {type(key)}, expected int or str.")
